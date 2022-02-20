@@ -1,6 +1,7 @@
 from math import sqrt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLineEdit, QPushButton, QApplication, QStyleFactory
+import re
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -50,7 +51,7 @@ class MainWindow(QWidget):
         btn_div = QPushButton('/', clicked = lambda:self.op_press('/'))
         btn_dot = QPushButton('.', clicked = lambda:self.num_press('.'))
         btn_sqrt = QPushButton('√', clicked = lambda:self.op_press('sqrt('))
-        btn_open_p = QPushButton('(', clicked = lambda:self.op_press('('))
+        btn_open_p = QPushButton('(', clicked = lambda:self.num_press('('))
         btn_close_p = QPushButton(')', clicked = lambda:self.op_press(')'))
 
         # agregar botones al layout
@@ -85,7 +86,6 @@ class MainWindow(QWidget):
     def num_press(self, key):
         if self.calculated:
             self.clear()
-            self.calculated = False
 
         self.operands.append(key)
         result_string = ''.join(self.operands)
@@ -97,6 +97,12 @@ class MainWindow(QWidget):
         if self.debug_mode: self.debug()
 
     def op_press(self, key):
+        if self.calculated:
+            self.clear()
+
+        if (key == '-' and self.answer == []):
+            self.num_press(key)
+            return
 
         temp_string = ''.join(self.operands).rstrip('.')
         if temp_string != "":
@@ -107,25 +113,52 @@ class MainWindow(QWidget):
         
         if self.debug_mode: self.debug()
 
+    def append_mult(self, index):
+        if index == 0: return
+        self.final_string = self.final_string[:index] + '*' + self.final_string[index:]
+
     def f_result(self):
-        final_string = ''.join(self.answer) + ''.join(self.operands)
+        if self.calculated:
+            self.clear()
+
+        self.final_string = ''.join(self.answer) + ''.join(self.operands)
+        
+        # closing opened parenthesis
+        if len(re.findall(r"\(", self.final_string)) > len(re.findall(r"\)", self.final_string)) :
+            self.op_press(')')
+            self.f_result()
+            return
+        
+        # treating parenthesis as multiplication if no operation is given befor openning one
+        if re.findall(r'(?<![\*\(\/\-\+(sqrt)])\(', self.final_string):
+            for i in range(len(re.findall(r'(?<![\*\(\/\-\+(sqrt)])\(', self.final_string))):
+                index = re.search(r'(?<![\*\(\/\-\+(sqrt)])\(', self.final_string).start()
+                self.append_mult(index)
+        
+        # treating parenthesis as multiplication if no operation is given befor openning one
+        if re.findall(r'(?<![\*\(\/\-\+])(sqrt)', self.final_string):
+            for i in range(len(re.findall(r'(?<![\*\(\/\-\+])(sqrt)', self.final_string))):
+                index = re.search(r'(?<![\*\(\/\-\+])(sqrt)', self.final_string).start()
+                self.append_mult(index)
+        
+        if self.debug_mode:
+            print("self.final_string: => ", self.final_string)
+
         try:
-            final_result = eval(final_string)
+            final_result = eval(self.final_string)
+            if self.debug_mode:
+                print("final_result: => ", final_result)
         except SyntaxError as e:
-            if "'(' was never closed" in e.msg:
-                self.num_press(')')
-                self.f_result()
-            else:
-                self.result.setText('Error de sintaxis...')
+            self.result.setText('Error de sintaxis...')
         except ZeroDivisionError:
              self.result.setText("No se puede dividir entre 0")
         except:
                 self.result.setText('Error de sintaxis...')
 
         else:
-            final_string += ' = '
-            final_string += str(final_result)
-            self.result.setText(final_string)
+            self.final_string += ' = '
+            self.final_string += str(final_result)
+            self.result.setText(self.final_string)
         self.calculated = True
 
         if self.debug_mode: self.debug()
@@ -135,6 +168,7 @@ class MainWindow(QWidget):
         self.operands = []
         self.answer = []
         self.result.clear()
+        self.calculated = False
         
         if self.debug_mode: self.debug()
 
