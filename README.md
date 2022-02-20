@@ -3,6 +3,9 @@
 ## Instalación de dependencias
 El proyecto utiliza PyQt5 y pandas, para instalar estas dependencias automáticamente puedes hacer uso de `pip` con la sentencia: `pip install -r requirements.txt`
 
+## Utilización
+Ejecutar `launcher.py`
+
 ## Grupo 1
 **Integrantes**:
 - Alexis Ochoa
